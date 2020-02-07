@@ -1,0 +1,156 @@
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Rock-Scissors-Paper</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+  </head>
+  <body onload="onload()">
+    <div class="container">
+      <h1>Rock, Scissors, Paper!</h1>
+      
+      <div class="userJoin" id="userJoin">
+        <p id="userNameLabel">User Name:</p>
+        <input id="userName" type="text" value="" placeholder="Enter Username" />
+        <button id="join">Join!</button>
+      </div>
+
+      <div class="gamePage">
+
+        <div class="sectionArea">
+          <img class="image" id="rock" src="/img/rock.png" />
+          <img class="image" id="scissors" src="/img/scissors.png" />
+          <img class="image" id="paper" src="/img/paper.png" />
+
+          <div id="info">
+
+          </div>
+
+        </div>
+
+
+
+      </div>
+    </div>
+    
+  </body>
+
+  <script>
+    function onload(){
+      var socket = io.connect();
+      var submitted = false; //player submit chioce
+      var userName = "";
+
+      document.getElementById("join").onclick = onJoin;
+      var images = document.getElementsByClassName("image");
+
+      for(var i in images){
+        images[i].onclick = onImageClick;
+      }
+
+
+      // socket.on('get user', function(data){
+      //   console.log(data);
+      // });
+
+      socket.on('user join', function(userName) {
+        var $info = document.getElementById("info");
+        var $p = "<p>" + userName + " join.</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+      });
+
+      socket.on('user left', function(userName) {
+        var $info = document.getElementById("info");
+        var $p = "<p>" + userName + " left.</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+      });
+
+
+      socket.on('room full', function() {
+        console.log("room full");
+      });
+
+      socket.on('disconnected', function (userName) {
+        console.log("disconnected");
+      });
+
+      socket.on('connected', function (userName) {
+        console.log("connected");
+      });
+
+      socket.on('game start', function() {
+        var $info = document.getElementById("info");
+        var $p = "<p>Game start. Make your choice.</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+      });
+
+      socket.on('user choice', function(userName, choice){
+        var $info = document.getElementById("info");
+        var $p = "<p>" + userName +" chose "+ choice+ "</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+      });
+
+      socket.on('tie', function (choices) {
+        var $info = document.getElementById("info");
+        var $p = "<p>A tie.</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+
+        submitted = false;
+      });
+
+      socket.on('player 1 win', function (choices) {
+        var $info = document.getElementById("info");
+        var $p = "<p>" + choices[0].user+ " wins.</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+
+        submitted = false;
+      });
+      
+      socket.on('player 2 win', function (choices) {
+        var $info = document.getElementById("info");
+        var $p = "<p>" + choices[1].user+ " wins.</p>";
+        $info.innerHTML = $info.innerHTML + $p;
+
+        submitted = false;
+      });
+
+      function onJoin(){
+        userName=document.getElementById('userName').value;
+        
+        socket.emit('add user', userName, function(data) {
+          if(data){
+            document.getElementById("userJoin").innerHTML = "<p>User Name:<span>" + userName +  "</span></p >";
+          }else{
+            alert(userName + " username is already in use.");
+          }
+        });
+
+      }
+
+
+
+      function onImageClick(choice){
+        var choice = event.target.id;
+        if(!submitted){
+          submitted = true;
+          socket.emit('player choice', userName, choice);
+          var $info = document.getElementById("info");
+          var $p = "<p>Waiting for other player...</p>";
+          $info.innerHTML = $info.innerHTML + $p;
+        }else{
+          var $info = document.getElementById("info");
+          var $p = "<p>You have already made a choice!</p>";
+          $info.innerHTML = $info.innerHTML + $p;
+        } 
+      }
+
+    }
+
+    
+    
+
+    
+  </script>
+  </html>
