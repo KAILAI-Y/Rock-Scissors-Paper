@@ -2,9 +2,11 @@ var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
-users = [];
+//users = [];
 connections = [];
-choices = [];
+//players = [];
+var players = [];
+
 
 server.listen(process.env.PORT || 3000);
 console.log('Sever running...');
@@ -17,23 +19,29 @@ app.use(express.static(__dirname+'/public'));
 
 io.sockets.on('connection', function(socket) {
     connections.push(socket);
+    io.emit('user enter', users);
     console.log('Connected: %s sockets connected', connections.length);
 
     socket.on('disconnect', function(data) {
-        users.splice(users.indexOf(socket.username), 1);
-        io.emit('user left', socket.username);
+        var findIndex = users.indexOf(socket.username);
+        if(findIndex >= 0){
+          users.splice(users.indexOf(socket.username), 1);
+        }
+        io.emit('user left', socket.username, users);
+        console.log('user left...');
+
         //updateUsernames();
         connections.splice(connections.indexOf(socket), 1)
 
         var findIndex = -1;
-        for(var i in choices){
-          if(choices[i].user == socket.username){
+        for(var i in players){
+          if(players[i].user == socket.username){
             findIndex = i;
             break;
           }
         }
         if(findIndex > -1){
-          choices.splice(findIndex, 1)
+          players.splice(findIndex, 1)
         }
 
         io.emit('disconnected', socket.username);
@@ -46,51 +54,59 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('add user', function(data, callback) {
         socket.username = data;
-
-        if(users.indexOf(socket.username) > -1)
-        {
-            callback(false);
+        let findIndex = -1;
+        for(let i in players){
+          if(players[i].name == socket.username){
+            findIndex = i;
+            break;
+          }
         }
-        else
-        {
-            users.push(socket.username);
-            io.emit('user join', socket.username);
-            //updateUsernames();
+        if(findIndex > -1){
+          callback(false)
+        }else{
+          players.push({
+            name: socket.username,
+            choice: ''
+          })   
+            io.emit('user join', socket.username, players);
             callback(true);
-
-            if (Object.keys(users).length == 2)
+            if (players.length == 2)
             {
-                io.emit('connected', socket.username);
                 io.emit('game start');
             }
         }
     });
 
-    socket.on('player choice', function (username, choice) {
-        choices.push({'user': username, 'choice': choice});
-        console.log('%s chose %s.', username, choice);
 
-        io.emit('user choice', socket.username, choice);
+    socket.on('player choice', function (username, choice) {
+        for(let i in players){
+          if(players[i].name == username){
+            players[i].choice = choice
+          }
+        }
+        console.log('%s chose %s.', username, players);
+
+        io.emit('user choice', socket.username, players);
         
-        if(choices.length == 2) 
+        if(players.length == 2) 
         {
             console.log('[socket.io] Both players have made choices.');
 
-            switch (choices[0]['choice'])
+            switch (players[0].choice)
             {
                 case 'rock':
-                    switch (choices[1]['choice'])
+                    switch (players[1].choice)
                     {
                         case 'rock': 
-                            io.emit('tie', choices);
+                            io.emit('tie', players);
                             break;
 
                         case 'paper':
-                            io.emit('player 2 win', choices);               
+                            io.emit('player 2 win', players);               
                             break;
         
                         case 'scissors':
-                            io.emit('player 1 win', choices);
+                            io.emit('player 1 win', players);
                             break;
 
                         default:
@@ -99,18 +115,18 @@ io.sockets.on('connection', function(socket) {
                     break;
 
                 case 'paper':
-                    switch (choices[1]['choice'])
+                    switch (players[1].choice)
                     {
                         case 'rock':
-                            io.emit('player 1 win', choices);     
+                            io.emit('player 1 win', players);     
                             break;
 
                         case 'paper':
-                            io.emit('tie', choices);
+                            io.emit('tie', players);
                             break;
         
                         case 'scissors':
-                            io.emit('player 2 win', choices);
+                            io.emit('player 2 win', players);
                             break;
 
                         default:
@@ -119,18 +135,18 @@ io.sockets.on('connection', function(socket) {
                 break;
 
                 case 'scissors':
-                    switch (choices[1]['choice'])
+                    switch (players[1].choice)
                     {
                         case 'rock':
-                            io.emit('player 2 win', choices);    
+                            io.emit('player 2 win', players);    
                             break;
 
                         case 'paper':
-                            io.emit('player 1 win', choices); 
+                            io.emit('player 1 win', players); 
                             break;
         
                         case 'scissors':
-                            io.emit('tie', choices);
+                            io.emit('tie', players);
                             break;
 
                         default:
@@ -141,12 +157,6 @@ io.sockets.on('connection', function(socket) {
                 default:
                     break;
             }
-
-            choices = [];
         }
     });
-
-    function updateUsernames() {
-        io.sockets.emit('get user', users);
-    }
 });

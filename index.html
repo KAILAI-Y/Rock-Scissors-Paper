@@ -6,6 +6,17 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Rock-Scissors-Paper</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <style>
+      .player{
+        display: flex;
+        align-items: cneter;
+        height: 40px;
+      }
+      .player span{
+        display: inline-block;
+        width: 200px;
+      }
+    </style>
   </head>
   <body onload="onload()">
     <div class="container">
@@ -25,6 +36,15 @@
           <img class="image" id="paper" src="/img/paper.png" />
 
           <div id="info">
+            <div class="player">
+              <div class="player-name">Player1: <span id="player1"></span></div>
+              <div class="player-choice">Choice: <span id="choice1"></span></div>
+            </div>
+
+            <div class="player">
+              <div class="player-name">Player2: <span id="player2"></span></div>
+              <div class="player-choice">Choice: <span id="choice2"></span></div>
+            </div>
 
           </div>
 
@@ -43,6 +63,7 @@
       var submitted = false; //player submit chioce
       var userName = "";
 
+
       document.getElementById("join").onclick = onJoin;
       var images = document.getElementsByClassName("image");
 
@@ -50,22 +71,39 @@
         images[i].onclick = onImageClick;
       }
 
-
-      // socket.on('get user', function(data){
-      //   console.log(data);
-      // });
-
-      socket.on('user join', function(userName) {
-        var $info = document.getElementById("info");
-        var $p = "<p>" + userName + " join.</p>";
-        $info.innerHTML = $info.innerHTML + $p;
+      socket.on('user enter', function(users){
+        var $player1= document.getElementById("player1");
+        var $player2= document.getElementById("player2");
+        if(users.length == 0)
+          return;
+        if(users.length == 1){
+          $player1.innerHTML = users[0]
+        }
+        if(users.length >= 2){
+          $player1.innerHTML = users[0]
+          $player2.innerHTML = users[1]
+        }
       });
 
-      socket.on('user left', function(userName) {
-        var $info = document.getElementById("info");
-        var $p = "<p>" + userName + " left.</p>";
-        $info.innerHTML = $info.innerHTML + $p;
+
+      socket.on('user join', function(userName, users) {
+        var $player1= document.getElementById("player1");
+        var $player2= document.getElementById("player2");
+        if(users[0]){$player1.innerHTML = users[0];}
+        if(users[1]){$player2.innerHTML = users[1];}
+      });      
+
+
+      socket.on('user left', function(userName,users) {
+        var $player1= document.getElementById("player1");
+        var $player2= document.getElementById("player2");
+        $player1.innerHTML = "";
+        $player2.innerHTML = "";
+        if(users.length == 1)
+          $player1.innerHTML = users[0];
       });
+
+      
 
 
       socket.on('room full', function() {
@@ -86,10 +124,12 @@
         $info.innerHTML = $info.innerHTML + $p;
       });
 
-      socket.on('user choice', function(userName, choice){
-        var $info = document.getElementById("info");
-        var $p = "<p>" + userName +" chose "+ choice+ "</p>";
-        $info.innerHTML = $info.innerHTML + $p;
+      socket.on('user choice', function(userName, choices){
+        var $choice1= document.getElementById("choice1");
+        var $choice2= document.getElementById("choice2");
+        $choice1.innerHTML = choices[0].choice;
+        if(choices.length == 2)
+          $choice2.innerHTML = choices[1].choice
       });
 
       socket.on('tie', function (choices) {
