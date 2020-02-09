@@ -19,30 +19,23 @@ app.use(express.static(__dirname+'/public'));
 
 io.sockets.on('connection', function(socket) {
     connections.push(socket);
-    io.emit('user enter', users);
+    io.emit('user enter', players);
     console.log('Connected: %s sockets connected', connections.length);
 
     socket.on('disconnect', function(data) {
-        var findIndex = users.indexOf(socket.username);
-        if(findIndex >= 0){
-          users.splice(users.indexOf(socket.username), 1);
-        }
-        io.emit('user left', socket.username, users);
-        console.log('user left...');
-
-        //updateUsernames();
-        connections.splice(connections.indexOf(socket), 1)
-
-        var findIndex = -1;
-        for(var i in players){
-          if(players[i].user == socket.username){
+        let findIndex = -1;
+        for(let i in players){
+          if(players[i].name == socket.username){
             findIndex = i;
             break;
           }
         }
+
         if(findIndex > -1){
-          players.splice(findIndex, 1)
+          players.splice(findIndex, 1);
         }
+        io.emit('user left', socket.username, players);
+        connections.splice(connections.indexOf(socket), 1);
 
         io.emit('disconnected', socket.username);
         console.log('Disconnected: %s sockets connected', connections.length);    
@@ -54,6 +47,14 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('add user', function(data, callback) {
         socket.username = data;
+        if(players.length >= 2){
+          callback({
+            status: 2,
+            message: 'room full'
+          })
+          return
+        }
+
         let findIndex = -1;
         for(let i in players){
           if(players[i].name == socket.username){
@@ -62,19 +63,26 @@ io.sockets.on('connection', function(socket) {
           }
         }
         if(findIndex > -1){
-          callback(false)
-        }else{
-          players.push({
-            name: socket.username,
-            choice: ''
-          })   
-            io.emit('user join', socket.username, players);
-            callback(true);
-            if (players.length == 2)
-            {
-                io.emit('game start');
-            }
+          callback({
+            status: 1,
+            message: 'A same name has been joined'
+          })
+          return
         }
+
+        players.push({
+          name: socket.username,
+          choice: ''
+        })  
+
+        io.emit('user join', socket.username, players);
+        if (players.length == 2){
+            io.emit('game start');
+        }
+        callback({
+          status: 0,
+          message: 'joined'
+        })
     });
 
 
@@ -98,15 +106,15 @@ io.sockets.on('connection', function(socket) {
                     switch (players[1].choice)
                     {
                         case 'rock': 
-                            io.emit('tie', players);
+                            io.emit('game over', players, {winner: null});
                             break;
 
                         case 'paper':
-                            io.emit('player 2 win', players);               
+                            io.emit('game over', players, {winner: players[1]});               
                             break;
         
                         case 'scissors':
-                            io.emit('player 1 win', players);
+                            io.emit('game over', players, {winner: players[0]});  
                             break;
 
                         default:
@@ -118,15 +126,15 @@ io.sockets.on('connection', function(socket) {
                     switch (players[1].choice)
                     {
                         case 'rock':
-                            io.emit('player 1 win', players);     
+                            io.emit('game over', players, {winner: players[0]});   
                             break;
 
                         case 'paper':
-                            io.emit('tie', players);
+                            io.emit('game over', players, {winner: null});
                             break;
         
                         case 'scissors':
-                            io.emit('player 2 win', players);
+                            io.emit('game over', players, {winner: players[1]}); 
                             break;
 
                         default:
@@ -138,15 +146,15 @@ io.sockets.on('connection', function(socket) {
                     switch (players[1].choice)
                     {
                         case 'rock':
-                            io.emit('player 2 win', players);    
+                            io.emit('game over', players, {winner: players[1]});   
                             break;
 
                         case 'paper':
-                            io.emit('player 1 win', players); 
+                            io.emit('game over', players, {winner: players[0]}); 
                             break;
         
                         case 'scissors':
-                            io.emit('tie', players);
+                            io.emit('game over', players, {winner: null});
                             break;
 
                         default:
