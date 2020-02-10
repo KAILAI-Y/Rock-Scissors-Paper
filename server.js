@@ -23,22 +23,18 @@ io.sockets.on('connection', function(socket) {
     console.log('Connected: %s sockets connected', connections.length);
 
     socket.on('disconnect', function(data) {
-        let findIndex = -1;
-        for(let i in players){
-          if(players[i].name == socket.username){
-            findIndex = i;
-            break;
-          }
-        }
+      let findIndex = players.findIndex(function(player){
+        return player.name == socket.username;
+      })
 
-        if(findIndex > -1){
-          players.splice(findIndex, 1);
-        }
-        io.emit('user left', socket.username, players);
-        connections.splice(connections.indexOf(socket), 1);
+      if(findIndex > -1){
+        players.splice(findIndex, 1);
+      }
+      io.emit('user left', socket.username, players);
+      connections.splice(connections.indexOf(socket), 1);
 
-        io.emit('disconnected', socket.username);
-        console.log('Disconnected: %s sockets connected', connections.length);    
+      io.emit('disconnected', socket.username);
+      console.log('Disconnected: %s sockets connected', connections.length);    
     });
 
     socket.on('send message', function(data) {
@@ -55,13 +51,11 @@ io.sockets.on('connection', function(socket) {
           return
         }
 
-        let findIndex = -1;
-        for(let i in players){
-          if(players[i].name == socket.username){
-            findIndex = i;
-            break;
-          }
-        }
+        let findIndex = players.findIndex(function(player){
+          return player.name == socket.username;
+        })
+        
+
         if(findIndex > -1){
           callback({
             status: 1,

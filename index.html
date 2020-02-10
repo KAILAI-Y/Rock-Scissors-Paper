@@ -46,11 +46,6 @@
               <div class="player-choice">Choice: <span id="choice2"></span></div>
             </div>
 
-            <div class="message">
-              <div id="tips">
-
-              </div>
-            </div>
 
           </div>
 
@@ -68,6 +63,7 @@
       var socket = io.connect();
       var submitted = false; //player submit chioce
       var userName = "";
+      var gameOver = false;
 
       document.getElementById("join").onclick = onJoin;
       var images = document.getElementsByClassName("image");
@@ -75,69 +71,66 @@
       for(var i in images){
         images[i].onclick = onImageClick;
       }
-
-      alert("Please input your name to join.");
-
       
+      socket.on('user enter', function(users){
+        if(users[0]){document.getElementById("player1").innerHTML = users[0].name;}
+        if(users[1]){document.getElementById("player2").innerHTML = users[1].name;}
+      });
+
       socket.on('user join', function(userName, users) {
-        var $player1= document.getElementById("player1");
-        var $player2= document.getElementById("player2");
-        if(users[0]){$player1.innerHTML = users[0].name;}
-        if(users[1]){$player2.innerHTML = users[1].name;}
-        if(users.length == 0)
-          return;
         if(users.length == 1){
-          $player1.innerHTML = users[0].name;
-          alert("Waiting for other players join.");
+          document.getElementById("player1").innerHTML = users[0].name;
+
         }
         if(users.length >= 2){
-          $player1.innerHTML = users[0].name;
-          $player2.innerHTML = users[1].name;
-          alert("Game start. Make your choice.");
+          document.getElementById("player1").innerHTML = users[0].name;
+          document.getElementById("player2").innerHTML = users[1].name;
         }
       });   
       
-      socket.on('user enter', function(users){
-        var $player1= document.getElementById("player1");
-        var $player2= document.getElementById("player2");
-        if(users.length == 0)
-          return;
-        if(users.length == 1){
-          $player1.innerHTML = users[0].name;
-        }
-        if(users.length >= 2){
-          $player1.innerHTML = users[0].name;
-          $player2.innerHTML = users[1].name;
-        }
-      });
-
-
       socket.on('user left', function(userName,users) {
-        var $player1= document.getElementById("player1");
-        var $player2= document.getElementById("player2");
-        $player1.innerHTML = "";
-        $player2.innerHTML = "";
-        if(users.length == 1)
-          $player1.innerHTML = users[0].name;
+        document.getElementById("player1").innerHTML = "";
+        document.getElementById("player2").innerHTML = "";
+        document.getElementById("choice1").innerHTML = "";
+        document.getElementById("choice2").innerHTML = "";
+        if(users.length == 1){
+          document.getElementById("player1").innerHTML = users[0].name;
+          document.getElementById("choice1").innerHTML = users[0].choice;
+        }
       });
 
-      socket.on('user choice', function(userName, choice){
-        var $choice1= document.getElementById("choice1");
-        var $choice2= document.getElementById("choice2");
-        $choice1.innerHTML = choice[0].choice;
-        if(choice.length == 2)
-          $choice2.innerHTML = choice[1].choice
+      socket.on('user choice', function(username, players){
+        if(username == userName){
+
+          let findIndex = players.findIndex(function(player){
+            return player.name == userName;
+          })
+
+          if(findIndex > -1){
+            let id = findIndex == 0 ? "choice1" : "choice2";
+            document.getElementById(id).innerHTML = players[findIndex].choice;
+          }
+
+        }
+
       });
 
-      socket.on('game over', function (player, result) {
+      socket.on('game over', function (players, result) {
+        document.getElementById("choice1").innerHTML = players[0].choice;
+        document.getElementById("choice2").innerHTML = players[1].choice;
         let tips = "";
         if(result.winner ){
           tips = "Winner: " + result.winner.name;
         }else{
           tips = "A tie!"
         }
-        alert(tips);
-        submitted = false;
+
+        setTimeout(function(){
+          alert(tips);
+        }, 1000)
+
+        gameOver = true;
+
       });
 
       function onJoin(){
@@ -147,7 +140,7 @@
           return
         }
         
-        socket.emit('add user', userName, function(data) {
+        socket.emit('add user', userName, function(result) {
           if(result.status == 0){
             document.getElementById("userJoin").innerHTML = "<p>User Name:<span>" + userName +  "</span></p >";
           }else if(result.status == 1){
@@ -160,16 +153,11 @@
       }
 
       function onImageClick(choice){
-        var choice = event.target.id;
-        if(!submitted){
-          submitted = true;
+        if(userName && !gameOver){
+          var choice = event.target.id;
           socket.emit('player choice', userName, choice);
-          alert("Waiting for other player...");
-        }else{
-          alert("You have already made a choice!");
-        } 
+        }
       }
-
     }
-  </script>
-  </html>
+</script>
+</html>
