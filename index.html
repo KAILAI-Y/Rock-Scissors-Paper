@@ -7,14 +7,52 @@
     <title>Rock-Scissors-Paper</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
     <style>
+      html, body{
+       height: 100%;
+      
+      }
+      .container{
+        display:flex;
+        flex-direction: column; 
+        align-items: center;
+        width: 900px;
+        min-height: 100%;
+        background-color:aliceblue;
+        margin: 0 auto;
+
+      }
+      .userJoin{
+        display:flex;
+        align-items: center;
+        justify-content: center;
+      }
+      input{
+        margin:0 10px;
+      }
+
+      .images{
+        display:flex;
+        align-items: center;
+        margin: 30px 0;
+      }
+      .image{
+        width:180px;
+        height: 180px;
+        border-radius: 50%; 
+      }
       .player{
         display: flex;
-        align-items: cneter;
+        align-items: center;
+        justify-content: center;
         height: 40px;
       }
-      .player span{
-        display: inline-block;
+      .player-value{
         width: 200px;
+        height: 28px;
+        line-height: 28px;
+        padding: 0 5px;
+        margin: 0 20px 0 10px;
+        border: 1px solid #CCC;
       }
     </style>
   </head>
@@ -28,32 +66,27 @@
         <button id="join">Join!</button>
       </div>
 
-      <div class="gamePage">
-
-        <div class="sectionArea">
-          <img class="image" id="rock" src="/img/rock.png" />
-          <img class="image" id="scissors" src="/img/scissors.png" />
-          <img class="image" id="paper" src="/img/paper.png" />
-
-          <div id="info">
-            <div class="player">
-              <div class="player-name">Player1: <span id="player1"></span></div>
-              <div class="player-choice">Choice: <span id="choice1"></span></div>
-            </div>
-
-            <div class="player">
-              <div class="player-name">Player2: <span id="player2"></span></div>
-              <div class="player-choice">Choice: <span id="choice2"></span></div>
-            </div>
-
-
-          </div>
-
-        </div>
-
-
-
+      <div class="images">
+        <img class="image" id="rock" src="/img/rock.png" />
+        <img class="image" id="scissors" src="/img/scissors.png" />
+        <img class="image" id="paper" src="/img/paper.png" />
       </div>
+
+      <div class="info">
+        <div class="player">
+          <div class="player-label">Player1: </div>
+          <div class="player-value" id="player1"></div>
+          <div class="player-label">Choice: </div>
+          <div class="player-value" id="choice1"></div>
+        </div>
+        <div class="player">
+          <div class="player-label">Player2: </div>
+          <div class="player-value" id="player2"></div>
+          <div class="player-label">Choice: </div>
+          <div class="player-value" id="choice2"></div>
+        </div>
+      </div>
+
     </div>
     
   </body>
@@ -142,7 +175,7 @@
         
         socket.emit('add user', userName, function(result) {
           if(result.status == 0){
-            document.getElementById("userJoin").innerHTML = "<p>User Name:<span>" + userName +  "</span></p >";
+            document.getElementById("userJoin").innerHTML = "<p>User Name: <span>" + userName +  "</span></p >";
           }else if(result.status == 1){
             alert(userName + " username is already in use.");
           }else if(result.status == 2){
